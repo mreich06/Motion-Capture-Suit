@@ -3,9 +3,14 @@
  * Edited by Maya Reich from 7/5-8/4
  */
  
+ //ideas- have interaction based on how far foot is from floor- particles scatter 
+ //draw lines between feet and hands repeatedly to create silky look
+ 
 import java.net.SocketException;
 import punktiert.math.Vec;
 import punktiert.physics.*;
+
+PGraphics pg; 
 
 PVector center = new PVector(0, 0);
 
@@ -19,7 +24,7 @@ VPhysics physics;
 BAttraction attractor;
 
 int maxParticles = 400;
-float gravity = 0;
+float gravity = 0.0001;
 
 boolean change = false; //change to true when you want to start incrementing opacity;
 final int PORT = 9763;
@@ -41,8 +46,19 @@ MocapServer server;
 void setup(){
   size(1024, 1024);
   background(0);
+  
+ 
+  
   currentScale = width/6;
   center = new PVector(width/2, height/2);
+  
+  //imageMode(CENTER);
+  
+   pg = createGraphics(width, height);
+   pg.beginDraw();
+   pg.background(0);
+   pg.endDraw();
+   
  
   try{
     server = new MocapServer(PORT);
@@ -67,9 +83,9 @@ void setup(){
     // create particle (Vec pos, mass, radius)
     VParticle particle = new VParticle(position, 10, radius);
     // make particles collide
-    particle.addBehavior(new BCollision());
+    //particle.addBehavior(new BCollision());
     //make particles wander
-    particle.addBehavior(new BWander(0,0,0));
+    //particle.addBehavior(new BWander(0,1,0));
     // add particle to world
     physics.addParticle(particle);
   }
@@ -80,23 +96,37 @@ void setup(){
 
 int frame = 0;
 void draw() {
-  background(0);
+  //background(0,50);
+  
+  pg.beginDraw();
+  pg.noStroke();
+ 
+  rectMode(CENTER);
+  rect(height/2, height/2, height*2, width*2);
+   
+   
   float red, green, blue;
   red = 50;
   green = 100;
-  blue = 100;
+  blue = 100;  
   
-  
-  
+  pushMatrix();
   translate(center.x, center.y);
   scale(currentScale);
   rotate(angle);
+  
+  pg.translate(center.x, center.y);
+  pg.scale(currentScale);
+  pg.rotate(angle);
+  
   //translate(width/2, height/2);
   //scale(width/6, height/6);
 
   if (server.pose != null){
      QuaternionSegment left = server.pose.segments[Body.LEFT_FOOT];
      QuaternionSegment right = server.pose.segments[Body.RIGHT_FOOT];
+     QuaternionSegment leftHand = server.pose.segments[Body.LEFT_HAND];
+     QuaternionSegment rightHand = server.pose.segments[Body.RIGHT_HAND];
      float size = max(0, 0.2-left.y);
      
      red = abs(red-(20*left.x));
@@ -108,12 +138,15 @@ void draw() {
       //green = abs(green+(20*left.x));
      fill(red, green, blue, 150);
      ellipse(right.x, right.z, 0.1, 0.1);
+     
+     ellipse(leftHand.x, leftHand.z, 0.1, 0.1);
+     ellipse(rightHand.x, rightHand.z, 0.1, 0.1);
   
      physics.update();
      //have attractor set to right foot location
      attractor.setAttractor(new Vec(right.x, right.z)); 
      //particles repel from feet
-     attractor.setStrength(-0.0001); 
+     attractor.setStrength(-0.001); 
      noFill();
      ellipse(attractor.getAttractor().x, attractor.getAttractor().y, attractor.getRadius(), attractor.getRadius());
   
@@ -128,23 +161,36 @@ void draw() {
     
     for (VParticle p : physics.particles) {
       p.y += gravity;
-      fill(lerp, changeColor);
-      ellipse(p.x, p.y, p.getRadius() * 2, p.getRadius() * 2);
-      //println(p.y);
+      pg.fill(lerp, changeColor);
+      float picker = oscillate(val, 100);
+      
+      //slowly morph from circles to ovals as frameCount increases
+      pg.ellipse(p.x, p.y, p.getRadius() * 4 * picker, p.getRadius() * 2 * picker);
+      
+      
     }
       
     for (VParticle p : physics.particles) {
       if (p.y > 3) {
-        p.setPreviousPosition(new Vec(p.x, -3));
+        float randomX = random(-3,3);
+        p.setPreviousPosition(new Vec(randomX, -3));
         p.y = -3;
+        p.x = randomX;
       }    
    }
+   
 
       
+    //angle+=0.1;
     gravity+=0.0000001;
   }
+  pg.endDraw();
+  
+  popMatrix();
+  image(pg, 0, 0); 
 }
 
+//function that oscillates between 0 and 1
 float oscillate(float value, float limit){
 
  float answer = (abs(abs( value % (limit*2) - limit) - limit));

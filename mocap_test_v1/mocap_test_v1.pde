@@ -3,6 +3,15 @@
  * Edited by Maya Reich from 7/5-8/4
  */
  
+ //have view be from bottom of feet. scale x and z so feet fill screen. Feet move in about 6x6 space so do 6/height or 6/width
+ //distance of feet from floor could change opacity, color, etc
+ //have particle sysetm repulse from feet- when they land, have particles move away. When foot is up, particles settle back
+//ideas: particle system attracted or repulsing from feet
+//connect hands and feet- draw lines between them
+//have feet change color depending on location
+
+//idea: have ripples go out from feet
+
 import java.net.SocketException;
 import punktiert.math.Vec;
 import punktiert.physics.*;
@@ -12,16 +21,15 @@ PVector center = new PVector(0, 0);
 PVector current = new PVector(0, 0);
 float currentScale = 1;
 float angle = 0;
-int val;
+
 VPhysics physics;
 
 // attractor
 BAttraction attractor;
 
-int maxParticles = 400;
-float gravity = 0;
+int maxParticles = 200;
+float gravity;
 
-boolean change = false; //change to true when you want to start incrementing opacity;
 final int PORT = 9763;
 
 
@@ -52,41 +60,15 @@ void setup(){
   }
   noStroke();
   
-  physics = new VPhysics();
-  physics.setfriction(0.04);
-
-  //AttractionForce: (Vec position, radius, strength)
-  attractor = new BAttraction(new Vec(0,0+gravity), 0.5, 0);
-  physics.addBehavior(attractor);
-
-//create randomly placed particles
-  for (int i = 0; i < maxParticles; i++) {
-    float radius = random(0.01, 0.05);
-    // vector for position- place somewhere on screen 
-    Vec position = new Vec(random(-3, 3), random(-3,3));
-    // create particle (Vec pos, mass, radius)
-    VParticle particle = new VParticle(position, 10, radius);
-    // make particles collide
-    particle.addBehavior(new BCollision());
-    //make particles wander
-    particle.addBehavior(new BWander(0,0,0));
-    // add particle to world
-    physics.addParticle(particle);
-  }
-  
-  
 }
 
 
 int frame = 0;
 void draw() {
-  background(0);
   float red, green, blue;
   red = 50;
   green = 100;
   blue = 100;
-  
-  
   
   translate(center.x, center.y);
   scale(currentScale);
@@ -101,57 +83,22 @@ void draw() {
      
      red = abs(red-(20*left.x));
      blue = abs(blue+(30*left.x));
-     fill(red, green, blue,150);
+     fill(red, green, blue,10);
      ellipse(left.x, left.z, size, size);
      red = abs(red+(20*left.x));
      blue = abs(blue+(30*left.x));
       //green = abs(green+(20*left.x));
-     fill(red, green, blue, 150);
+     fill(red, green, blue, 50);
+     //println(left.y);
      ellipse(right.x, right.z, 0.1, 0.1);
+     println("right.x is", right.x);
+     println("right.z is", right.z);
   
-     physics.update();
-     //have attractor set to right foot location
-     attractor.setAttractor(new Vec(right.x, right.z)); 
-     //particles repel from feet
-     attractor.setStrength(-0.0001); 
-     noFill();
-     ellipse(attractor.getAttractor().x, attractor.getAttractor().y, attractor.getRadius(), attractor.getRadius());
-  
-    println(oscillate(val, 10));
-    val++;
-
-   
-    float changeColor = 140 + 100 * sin( frameCount * 0.03f );
-    color from = color(255, 153, 204);
-    color to = color(153, 0, 153);
-    color lerp = lerpColor(from, to, oscillate(val,100));
-    
-    for (VParticle p : physics.particles) {
-      p.y += gravity;
-      fill(lerp, changeColor);
-      ellipse(p.x, p.y, p.getRadius() * 2, p.getRadius() * 2);
-      //println(p.y);
-    }
-      
-    for (VParticle p : physics.particles) {
-      if (p.y > 3) {
-        p.setPreviousPosition(new Vec(p.x, -3));
-        p.y = -3;
-      }    
-   }
-
-      
-    gravity+=0.0000001;
   }
+  
+
 }
 
-float oscillate(float value, float limit){
-
- float answer = (abs(abs( value % (limit*2) - limit) - limit));
- return answer/100.0;
-}
-
-//be able to change current view by dragging mouse around
 void mousePressed() {
   current.x = mouseX;
   current.y = mouseY;
